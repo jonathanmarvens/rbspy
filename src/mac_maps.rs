@@ -1,3 +1,4 @@
+use std;
 use std::io;
 use std::mem;
 use libc::{c_int, pid_t};
@@ -90,6 +91,9 @@ fn mach_vm_region(
 
 pub fn task_for_pid(pid: pid_t) -> io::Result<mach_port_name_t> {
     let mut task: mach_port_name_t = MACH_PORT_NULL;
+    // sleep for 5ms to make sure we don't get into a race between `task_for_pid` and execing a new
+    // process. Races here can freeze the OS because of a Mac kernel bug.
+    std::thread::sleep(std::time::Duration::from_millis(5));
     unsafe {
         let result =
             mach::traps::task_for_pid(mach::traps::mach_task_self(), pid as c_int, &mut task);
